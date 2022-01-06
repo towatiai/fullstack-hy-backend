@@ -1,41 +1,49 @@
-const mongoose = require('mongoose');
-require("dotenv").config();
+const mongoose = require("mongoose");
+const Person = require("./models/Person");
 
-
-function connect(password) {
-    password = password ?? process.env.MONGO_PASSWORD;
-
-    if (!password) {
-        console.log("Please add password to .env file with key 'MONGO_PASSWORD'");
-        process.exit(1);
+async function connect() {
+    try {
+        const url = process.env.MONGO_URL;
+        await mongoose.connect(url);
+        console.log("Connected to MongoDB.");
+    } catch(e) {
+        console.error("Error conecting to MongoDB:", e.message);
     }
-
-    const url = `mongodb+srv://fullstack:${password}@cluster0.qgq84.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
-
-    mongoose.connect(url);
 }
 
-function disconnect() {
-    mongoose.connection.close();
+async function disconnect() {
+    try {
+        await mongoose.connection.close();
+        console.log("Disconnected.");
+    } catch(e) {
+        console.error("Error disconnecting from MongoDB:", e.message);
+    }
 }
-
-const personSchema = new mongoose.Schema({
-    name: String,
-    number: String
-});
-
-const Person = mongoose.model('Person', personSchema);
 
 async function addPerson(name, number) {
-    console.log("adding person")
-    await (new Person({ name, number })).save();
+    const person = new Person({ name, number });
+    await person.save();
+    return person;
+}
+
+async function getPerson(id) {
+    return await Person.findById(id);
 }
 
 async function getAll() {
-    console.log("getall")
     return await Person.find({});
 }
 
-module.exports = {
-    connect, disconnect, Person, addPerson, getAll
+async function deletePerson(id) {
+    await Person.findByIdAndRemove(id);
 }
+
+async function updatePerson(id, person) {
+    return await Person.findByIdAndUpdate(id, person, { new: true });
+}
+
+module.exports = {
+    connect, disconnect,
+    Person,
+    addPerson, getAll, getPerson, deletePerson, updatePerson
+};
